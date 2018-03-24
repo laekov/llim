@@ -1,1 +1,4 @@
 problem
+*.pickle
+*.swp
+.DS_Store
