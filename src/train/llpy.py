@@ -53,10 +53,7 @@ def randomFetchChar(prv_chr, py, direct, is_head, last_ans, p_cnt):
             return i
     return '<err>'
 
-while True:
-    raw_line = sys.stdin.readline()
-    if len(raw_line) < 1:
-        break
+def pinyin2text(raw_line):
     a = [ '' ] + raw_line.strip().rstrip().split(' ') # For same id
     n = len(a) - 1
     ans = [ 'start' ] + [ '<todo>' ] * n + [ 'end' ]
@@ -82,4 +79,12 @@ while True:
             if ctn_stable >= stable_iter:
                 break
         #print('%s at %d' % (' '.join(ans[1 : n + 1]), cnt_iter))
-    print(' '.join(ans[1 : n + 1]))
+    return ''.join(ans[1 : n + 1])
+
+if __name__ == '__main__':
+    while True:
+        raw_line = sys.stdin.readline()
+        if len(raw_line) < 1:
+            break
+        print(pinyin2text(raw_line))
+   
