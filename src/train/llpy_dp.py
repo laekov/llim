@@ -29,24 +29,20 @@ def getLnkVal(a, b, pin, direct):
     lnk_v = curl / (totl + 1)
     # if totl > 0:
         # lnk_v *= math.log(totl)
-    lnk_v *= math.log(23 + totl, 23)
+    lnk_v *= math.log(13 + totl, 13)
     return lnk_v
 
 def evaluateAns(py, ans):
     n = len(ans)
-    s = []
+    s = 1.
     for i in range(0, n - 1):
         if i + 2 < n:
-            s.append(getLnkVal(ans[i], ans[i + 1], py[i + 1], 'fw'))
+            s *= getLnkVal(ans[i], ans[i + 1], py[i + 1], 'fw')
             # print('%s -> %s fw %e' % (ans[i], ans[i + 1], getLnkVal(ans[i], ans[i + 1], py[i + 1], 'fw')))
         if i > 0:
-            s.append(getLnkVal(ans[i + 1], ans[i], py[i], 'bw'))
+            s *= getLnkVal(ans[i + 1], ans[i], py[i], 'bw')
             # print('%s <- %s fw %e' % (ans[i], ans[i + 1], getLnkVal(ans[i + 1], ans[i], py[i], 'bw')))
-    s.sort(reverse = True)
-    pi = 1.
-    for i in range(min(len(s), int(len(s) * 0.7))):
-        pi *= s[i]
-    return pi 
+    return s
 
 def randomFetchChar(prv_chr, py, direct, is_head, last_ans, p_cnt):
     wl = {}
@@ -82,6 +78,8 @@ def cmbAns(ans, plc = ''):
 def printAnsWithVal(py, ans):
     print('%s %e' % (cmbAns(ans), evaluateAns(py, ans)))
 
+n_kep = 30
+
 def pinyin2text(raw_line):
     a = [ '' ] + raw_line.strip().rstrip().split(' ') # For same id
     n = len(a) - 1
@@ -93,41 +91,52 @@ def pinyin2text(raw_line):
     best_ans_val = evaluateAns(a, ans)
     cur_val = best_ans_val
     max_rat = math.exp(10.)
-    while lrn_rat < max_rat:
-        cnt_stable = 0
-        if lrn_rat < 64:
-            lrn_rat *= 1.1
-        else:
-            lrn_rat *= 1.7
-        for cnt_iter in range(max_iter):
-            b = ans[:]
-            for p in range(1, n + 1):
-                g_chr = randomFetchChar(b[p - 1], a[p], 'fw', p == 1, b[p], lrn_rat)
-                prv_lnk_val = getLnkVal(b[p - 1], b[p], a[p], 'fw')
-                cur_lnk_val = getLnkVal(b[p - 1], g_chr, a[p], 'fw')
-                if cur_lnk_val > prv_lnk_val or random() * (prv_lnk_val / cur_lnk_val) < 1. / lrn_rat:
-                    b[p] = g_chr
-            for p in range(n, 0, -1):
-                g_chr = randomFetchChar(ans[p + 1], a[p], 'bw', p == n, ans[p], lrn_rat)
-                prv_lnk_val = getLnkVal(b[p + 1], b[p], a[p], 'bw')
-                cur_lnk_val = getLnkVal(b[p + 1], g_chr, a[p], 'bw')
-                if cur_lnk_val > prv_lnk_val or random() * (prv_lnk_val / cur_lnk_val) < 1. / lrn_rat:
-                    b[p] = g_chr
-            vb = evaluateAns(a, b)
-            if vb > cur_val or random() * (cur_val / max(vb, eps)) < 1. / lrn_rat:
-                cur_val = vb
-                ans = b
-                if cur_val > best_ans_val:
-                    best_ans_val = cur_val
-                    best_ans = ans[:]
-                cnt_stable += 1
-        if lrn_rat < 64:
-            cur_val = best_ans_val
-            ans = best_ans
-        #print("%.5f %d" % (lrn_rat, cnt_stable))
-        #printAnsWithVal(a, best_ans)
-    #print('%s at %d' % (' '.join(ans[1 : n + 1]), cnt_iter))
-    return ( ''.join(best_ans[1 : n + 1]), best_ans, best_ans_val)
+    f = [ { 'start': { 'val': 1., 'text': 'start' } } ]
+    for i in range(1, n + 1):
+        f.append({})
+        vals = []
+        for v in dc[a[i]]:
+            if v == a[i]:
+                continue
+            d = {
+                    'val': 0.,
+                    'text': v,
+                    'from': '<unk>'
+            }
+            for jv in f[i - 1]:
+                j = f[i - 1][jv]
+                lnv = f[i - 1][jv]['val'] * getLnkVal(j['text'], v, a[i], 'fw')
+                if i > 0:
+                    lnv *= getLnkVal(v, j['text'], a[i - 1], 'bw')
+                if i == n:
+                    lnv *= getLnkVal('end', j['text'], a[i], 'bw')
+                if lnv > d['val']:
+                    d['val'] = lnv
+                    d['from'] = j['text']
+            f[i][v] = d
+            vals.append(d['val'])
+            vals.sort(reverse = True)
+            if len(vals) > n_kep:
+                vals = vals[0 : -1]
+        mval = vals[-1]
+        rmkeys = []
+        for v in f[i]:
+            if f[i][v]['val'] < mval:
+                rmkeys.append(v)
+        for k in rmkeys:
+            del f[i][k]
+    ans = [ '' ] * (n + 1)
+    ls_val = 0.
+    ls_txt = ''
+    for jv in f[n]:
+        if f[n][jv]['val'] > ls_val:
+            ls_val = f[n][jv]['val']
+            ls_txt = jv
+    ans[n] = ls_txt
+    for i in range(n - 1, 0, -1):
+        ls_txt = f[i + 1][ls_txt]['from']
+        ans[i] = ls_txt
+    return ( ''.join(ans[1 : n + 1]), ans, evaluateAns(a, ans))
 
 if __name__ == '__main__':
     while True:

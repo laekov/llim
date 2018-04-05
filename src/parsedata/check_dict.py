@@ -7,5 +7,6 @@ with open('../data/map.pickle', 'rb') as f:
 print(d['lu'][1])
 print(d['rui'][1])
 print(d['wo'])
+print(d['qu'])
 print(mp['fw']['start']['我'])
 print(mp['fw']['start']['握'])

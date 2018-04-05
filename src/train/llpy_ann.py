@@ -26,7 +26,7 @@ def getLnkVal(a, b, pin, direct):
         curl = mp[direct][a][b]
     else:
         curl = eps
-    lnk_v = curl / (totl + 1)
+    lnk_v = (curl + eps) / (totl + eps)
     # if totl > 0:
         # lnk_v *= math.log(totl)
     lnk_v *= math.log(23 + totl, 23)
@@ -34,19 +34,15 @@ def getLnkVal(a, b, pin, direct):
 
 def evaluateAns(py, ans):
     n = len(ans)
-    s = []
+    s = 1.
     for i in range(0, n - 1):
         if i + 2 < n:
-            s.append(getLnkVal(ans[i], ans[i + 1], py[i + 1], 'fw'))
+            s *= getLnkVal(ans[i], ans[i + 1], py[i + 1], 'fw')
             # print('%s -> %s fw %e' % (ans[i], ans[i + 1], getLnkVal(ans[i], ans[i + 1], py[i + 1], 'fw')))
         if i > 0:
-            s.append(getLnkVal(ans[i + 1], ans[i], py[i], 'bw'))
+            s *= getLnkVal(ans[i + 1], ans[i], py[i], 'bw')
             # print('%s <- %s fw %e' % (ans[i], ans[i + 1], getLnkVal(ans[i + 1], ans[i], py[i], 'bw')))
-    s.sort(reverse = True)
-    pi = 1.
-    for i in range(min(len(s), int(len(s) * 0.7))):
-        pi *= s[i]
-    return pi 
+    return s
 
 def randomFetchChar(prv_chr, py, direct, is_head, last_ans, p_cnt):
     wl = {}
@@ -114,7 +110,7 @@ def pinyin2text(raw_line):
                 if cur_lnk_val > prv_lnk_val or random() * (prv_lnk_val / cur_lnk_val) < 1. / lrn_rat:
                     b[p] = g_chr
             vb = evaluateAns(a, b)
-            if vb > cur_val or random() * (cur_val / max(vb, eps)) < 1. / lrn_rat:
+            if vb > cur_val or random() * (cur_val / vb) < 1. / lrn_rat:
                 cur_val = vb
                 ans = b
                 if cur_val > best_ans_val:
