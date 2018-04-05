@@ -15,9 +15,11 @@ max_iter = 10
 stable_iter = 5
 eps = .000001
 mul_co = 10.
+tri_wei = 10.
 innocent = math.exp(eps)
 
 def getLnkVal(a, b, pin, direct):
+    # print('checking %s to %s as %s' % (a, b, pin))
     totl = 0
     for i in dc[pin]:
         if a in mp[direct] and i in mp[direct][a]:
@@ -30,6 +32,8 @@ def getLnkVal(a, b, pin, direct):
     # if totl > 0:
         # lnk_v *= math.log(totl)
     lnk_v *= math.log(23 + totl, 23)
+    if len(a) == 2:
+        lnk_v *= tri_wei 
     return lnk_v
 
 def evaluateAns(py, ans):
@@ -39,12 +43,16 @@ def evaluateAns(py, ans):
         if i + 2 < n:
             s.append(getLnkVal(ans[i], ans[i + 1], py[i + 1], 'fw'))
             # print('%s -> %s fw %e' % (ans[i], ans[i + 1], getLnkVal(ans[i], ans[i + 1], py[i + 1], 'fw')))
+        if i + 3 < n:
+            s.append(getLnkVal(ans[i] + ans[i + 1], ans[i + 2], py[i + 2], 'fw'))
         if i > 0:
             s.append(getLnkVal(ans[i + 1], ans[i], py[i], 'bw'))
+        if i > 0 and i + 2 < n:
+            s.append(getLnkVal(ans[i + 2] + ans[i + 1], ans[i], py[i], 'bw'))
             # print('%s <- %s fw %e' % (ans[i], ans[i + 1], getLnkVal(ans[i + 1], ans[i], py[i], 'bw')))
     s.sort(reverse = True)
     pi = 1.
-    for i in range(min(len(s), int(len(s) * 0.7))):
+    for i in range(max(1, min(len(s), int(len(s) * 0.7)))):
         pi *= s[i]
     return pi 
 
@@ -85,7 +93,7 @@ def printAnsWithVal(py, ans):
 def pinyin2text(raw_line):
     a = [ '' ] + raw_line.strip().rstrip().split(' ') # For same id
     n = len(a) - 1
-    ans = [ 'start' ] + [ '<todo>' ] * n + [ 'end' ]
+    ans = [ '<start>' ] + [ '<todo>' ] * n + [ '<end>' ]
     lrn_rat = 1
     for i in range(1, n + 1):
         ans[i] = randomFetchChar(ans[i - 1], a[i], 'fw', i == 1, ans[i], 0)
@@ -105,12 +113,18 @@ def pinyin2text(raw_line):
                 g_chr = randomFetchChar(b[p - 1], a[p], 'fw', p == 1, b[p], lrn_rat)
                 prv_lnk_val = getLnkVal(b[p - 1], b[p], a[p], 'fw')
                 cur_lnk_val = getLnkVal(b[p - 1], g_chr, a[p], 'fw')
+                if p > 1:
+                    prv_lnk_val += getLnkVal(b[p - 2] + b[p - 1], b[p], a[p], 'fw')
+                    cur_lnk_val += getLnkVal(b[p - 2] + b[p - 1], g_chr, a[p], 'fw')
                 if cur_lnk_val > prv_lnk_val or random() * (prv_lnk_val / cur_lnk_val) < 1. / lrn_rat:
                     b[p] = g_chr
             for p in range(n, 0, -1):
                 g_chr = randomFetchChar(ans[p + 1], a[p], 'bw', p == n, ans[p], lrn_rat)
                 prv_lnk_val = getLnkVal(b[p + 1], b[p], a[p], 'bw')
                 cur_lnk_val = getLnkVal(b[p + 1], g_chr, a[p], 'bw')
+                if p + 1 <= n:
+                    prv_lnk_val += getLnkVal(b[p + 2] + b[p + 1], b[p], a[p], 'bw')
+                    cur_lnk_val += getLnkVal(b[p + 2] + b[p + 1], g_chr, a[p], 'bw')
                 if cur_lnk_val > prv_lnk_val or random() * (prv_lnk_val / cur_lnk_val) < 1. / lrn_rat:
                     b[p] = g_chr
             vb = evaluateAns(a, b)
@@ -134,6 +148,10 @@ if __name__ == '__main__':
         raw_line = sys.stdin.readline()
         if len(raw_line) < 1:
             break
+        a = [ '' ] + raw_line.strip().rstrip().split(' ')
+        ans = pinyin2text(raw_line)
+        print('%s %e' % (ans[0], ans[2]))
+        continue
         try:
             a = [ '' ] + raw_line.strip().rstrip().split(' ')
             ans = pinyin2text(raw_line)
