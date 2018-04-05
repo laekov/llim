@@ -10,7 +10,7 @@ with open('../data/map.pickle', 'rb') as fm:
 with open('../data/dict.pickle', 'rb') as fd:
     dc = pickle.load(fd)
 
-print('Initialized')
+sys.stderr.write('Initialized\n')
 max_iter = 10
 stable_iter = 5
 eps = .000001
@@ -148,14 +148,10 @@ if __name__ == '__main__':
         raw_line = sys.stdin.readline()
         if len(raw_line) < 1:
             break
-        a = [ '' ] + raw_line.strip().rstrip().split(' ')
-        ans = pinyin2text(raw_line)
-        print('%s %e' % (ans[0], ans[2]))
-        continue
         try:
             a = [ '' ] + raw_line.strip().rstrip().split(' ')
             ans = pinyin2text(raw_line)
-            print('%s %e' % (ans[0], ans[2]))
+            print('%s' % ans[0])
         except Exception as err:
             print(err)
    
