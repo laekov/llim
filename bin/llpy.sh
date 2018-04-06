@@ -10,6 +10,7 @@ if [ ! -f $1 ]; then
 	echo $help_info
 	exit
 fi
+echo >$2
 if [ ! -f $2 ]; then
 	echo 'File 2 does not exist'
 	echo $help_info

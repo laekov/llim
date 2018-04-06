@@ -4,7 +4,7 @@ import sys
 import math
 from random import random, randint
 
-with open('../data/map.pickle', 'rb') as fm:
+with open('../data/map_simple.pickle', 'rb') as fm:
     mp = pickle.load(fm)
 
 with open('../data/dict.pickle', 'rb') as fd:

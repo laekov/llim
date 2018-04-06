@@ -51,7 +51,9 @@ def test(beg = 0, end = -1):
     res_lcs = 0
     for i in range(beg, end):
         c = test_cases[i]
-        ans = llpy.pinyin2text(c['pinyin'])[0]
+        r = llpy.pinyin2text(c['pinyin'])
+        print('%s %e' % (r[0], r[2]))
+        ans = r[0]
         tot += 1
         res_strict += strictCmp(ans, c['text'], c['pinyin'])
         res_lcs += rougeCmp(ans, c['text'], c['pinyin'])
