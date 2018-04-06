@@ -2,15 +2,21 @@
 import pickle
 import sys
 import math
+import parser
 from random import random, randint
+import argparse
 
-with open('../data/map.pickle', 'rb') as fm:
-    mp = pickle.load(fm)
+mp = {}
+dc = {}
 
-with open('../data/dict.pickle', 'rb') as fd:
-    dc = pickle.load(fd)
+def init(mp_path, dc_path):
+    global mp, dc
+    with open(mp_path, 'rb') as fm:
+        mp = pickle.load(fm)
+    with open(dc_path, 'rb') as fd:
+        dc = pickle.load(fd)
+    sys.stderr.write('Initialized\n')
 
-sys.stderr.write('Initialized\n')
 max_iter = 10
 stable_iter = 5
 eps = .000001
@@ -52,7 +58,7 @@ def evaluateAns(py, ans):
             # print('%s <- %s fw %e' % (ans[i], ans[i + 1], getLnkVal(ans[i + 1], ans[i], py[i], 'bw')))
     s.sort(reverse = True)
     pi = 1.
-    for i in range(max(1, min(len(s), int(len(s) * 0.7)))):
+    for i in range(max(1, min(len(s), int(len(s) * 0.8)))):
         pi += s[i]
     return pi 
 
@@ -144,6 +150,17 @@ def pinyin2text(raw_line):
     return ( ''.join(best_ans[1 : n + 1]), best_ans, best_ans_val)
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    mp_path = '../data/map.pickle' 
+    dc_path = '../data/dict.pickle'
+    parser.add_argument('-mp', '--map-path', help='word map data path', required=False, default=mp_path)
+    parser.add_argument('-dc', '--dict-path', help='pinyin map data path', required=False, default=dc_path)
+    args = vars(parser.parse_args())
+    if args['map_path'] is not None:
+        mp_path = args['map_path']
+    if args['dict_path'] is not None:
+        dc_path = args['dict_path']
+    init(mp_path, dc_path)
     while True:
         raw_line = sys.stdin.readline()
         if len(raw_line) < 1:
