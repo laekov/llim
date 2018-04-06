@@ -44,15 +44,20 @@ def plotIt():
     plt.savefig('fig.png')
 
 def test(beg = 0, end = -1):
+    mp_path = '../data/map.pickle' 
+    dc_path = '../data/dict.pickle'
+    llpy.init(mp_path, dc_path)
     if end == -1:
         end = len(test_cases)
     tot = 0
     res_strict = 0
     res_lcs = 0
+    ouf = open('output.txt', 'w')
     for i in range(beg, end):
         c = test_cases[i]
         r = llpy.pinyin2text(c['pinyin'])
         print('%s %e' % (r[0], r[2]))
+        ouf.write(r[0] + '\n')
         ans = r[0]
         tot += 1
         res_strict += strictCmp(ans, c['text'], c['pinyin'])
@@ -61,7 +66,7 @@ def test(beg = 0, end = -1):
         if i % 16 == 0:
             plotIt()
             print('[Case 0 - %d] %s' % (i, genResStr(tot, res_strict, res_lcs)))
-
+    ouf.close()
     print('[Fin] %s' % genResStr(tot, res_strict, res_lcs))
 
 if __name__ == '__main__':
